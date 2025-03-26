@@ -13,7 +13,7 @@ use crate::{
     image::Images,
     moderation::Moderations,
     util::AsyncTryFrom,
-    Assistants, Audio, AuditLogs, Batches, Chat, Completions, Embeddings, FineTuning, Invites,
+    Assistants, Audio, AuditLogs, Batches, Chat, Responses, Completions, Embeddings, FineTuning, Invites,
     Models, Projects, Threads, Users, VectorStores,
 };
 
@@ -85,6 +85,11 @@ impl<C: Config> Client<C> {
     /// To call [Chat] group related APIs using this client.
     pub fn chat(&self) -> Chat<C> {
         Chat::new(self)
+    }
+
+    /// To call [Response] gropu related APIs using this client.
+    pub fn responses(&self) -> Responses<C> {
+        Responses::new(self)
     }
 
     /// To call [Images] group related APIs using this client.
