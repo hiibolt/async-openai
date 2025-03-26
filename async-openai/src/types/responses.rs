@@ -792,7 +792,7 @@ pub struct CreateResponsesCompletionRequest {
     /// A list of tools the model may call. Currently, only functions are supported as a tool.
     /// Use this to provide a list of functions the model may generate JSON inputs for. A max of 128 functions are supported.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<ResponsesTool>>,
+    pub tools: Option<Vec<Tool>>,
 
     /// An alternative to sampling with temperature, called nucleus sampling,
     /// where the model considers the results of the tokens with top_p probability mass.
@@ -809,6 +809,279 @@ pub struct CreateResponsesCompletionRequest {
     /// A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#end-user-ids).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,
+}
+
+/// Specifies the comparison operator: `eq`, `ne`, `gt`, `gte`, `lt`,
+/// `lte`.
+///
+/// - `eq`: equals
+/// 
+/// - `ne`: not equal
+/// 
+/// - `gt`: greater than
+/// 
+/// - `gte`: greater than or equal
+/// 
+/// - `lt`: less than
+/// 
+/// - `lte`: less than or equal
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ComparisonFilterType {
+    Eq,
+    Ne,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
+}
+/// The value to compare against the attribute key; supports string,
+/// number, or boolean types.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum ComparisonFilterValue {
+    String(String),
+    Number(f64),
+    Boolean(bool),
+}
+/// A filter used to compare a specified attribute key to a given value
+/// using a defined comparison operation.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct ComparisonFilter {
+    /// Specifies the comparison operator: eq, ne, gt, gte, lt, lte.
+    /// 
+    /// * eq: equals
+    /// * ne: not equal
+    /// * gt: greater than
+    /// * gte: greater than or equal
+    /// * lt: less than
+    /// * lte: less than or equal
+    r#type: ComparisonFilterType,
+    /// The key to compare against the value.
+    key: String,
+    /// The value to compare against the attribute key; supports string, number, or boolean types.
+    value: ComparisonFilterValue,
+}
+/// Type of operation: `and` or `or`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum CompoundFilterType {
+    And,
+    Or,
+}
+/// Combine multiple filters using `and` or `or`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct CompoundFilter {
+    /// Type of operation: `and` or `or`.
+    r#type: CompoundFilterType,
+    /// Array of filters to combine. Items can be `ComparisonFilter` or `CompoundFilter``.
+    filters: Vec<Filter>,
+}
+/// A filter used specifically for file search tools.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum Filter {
+    /// A filter used to compare a specified attribute key to a given value using a defined comparison operation.
+    ComparisonFilter(ComparisonFilter), 
+    /// Combine multiple filters using `and` or `or`.
+    CompoundFilter(CompoundFilter),
+}
+/// The ranker to use for the file search. If not specified will use the `auto` ranker.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum FileSearchToolRankingOptionsRanker {
+    #[serde(rename = "auto")]
+    Auto,
+    #[serde(rename = "default_2024_08_21")]
+    Default2024_08_21
+}
+/// The type of the file search tool. Always `file_search`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FileSearchToolType {
+    #[default]
+    FileSearch,
+}
+/// Ranking options for search.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FileSearchToolRankingOptions {
+    /// The ranker to use for the file search. If not specified will use the `auto` ranker.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ranker: Option<FileSearchToolRankingOptionsRanker>,
+    /// The score threshold for the file search, a number between 0 and
+    /// 1.
+    /// 
+    /// Numbers closer to 1 will attempt to return only the most
+    /// relevant
+    /// 
+    /// results, but may return fewer results.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    score_threshold: Option<f32>,
+}
+/// A tool that searches for relevant content from uploaded files.
+/// Learn more about the [file search tool](https://platform.openai.com/docs/guides/tools-file-search).
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FileSearchTool {
+    /// The type of the file search tool. Always `file_search`.
+    r#type: FileSearchToolType,
+    /// The IDs of the vector stores to search.
+    vector_store_ids: Vec<String>,
+    /// The maximum number of results to return. This number should be between 1 and 50 inclusive.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_num_results: Option<u8>,
+    /// A filter to apply based on file attributes.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    filters: Option<Filter>,
+    /// Ranking options for search.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ranking_options: Option<FileSearchToolRankingOptions>,
+}
+
+/// Options for function types that can be provided to the model for response generation. Always `function`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FunctionToolType {
+    #[default]
+    Function,
+}
+/// Defines a function in your own code the model can choose to call. Learn
+/// more about [function calling](https://platform.openai.com/docs/guides/function-calling).
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FunctionTool {
+    /// The type of the function tool. Always `function`.
+    r#type: FunctionToolType,
+    /// The name of the function to call.
+    name: String,
+    /// A description of the function. Used by the model to determine whether or not to call the function.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    /// A JSON schema object describing the parameters of the function.
+    parameters: serde_json::Value,
+    /// Whether to enforce strict parameter validation. Default `true``.
+    strict: bool,
+}
+
+/// The type of the computer use tool. Always `computer_use_preview`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ComputerToolType {
+    #[serde(rename = "computer_use_preview")]
+    ComputerUsePreview,
+}
+/// The type of computer environment to control.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ComputerToolEnvironment {
+    Mac,
+    Windows,
+    Ubuntu,
+    Browser,
+}
+/// A tool that controls a virtual computer. Learn more about the 
+/// [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct ComputerTool {
+    /// The type of the computer use tool. Always `computer_use_preview`.
+    r#type: ComputerToolType,
+    /// The width of the computer display.
+    display_width: u32,
+    /// The height of the computer display.
+    display_height: u32,
+    /// The type of computer environment to control.
+    environment: ComputerToolEnvironment
+}
+
+/// The type of the web search tool. One of:
+/// - `web_search_preview`
+/// - `web_search_preview_2025_03_11`
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum WebSearchToolType {
+    #[serde(rename = "web_search_preview")]
+    WebSearchPreview,
+    #[serde(rename = "web_search_preview_2025_03_11")]
+    WebSearchPreview2025_03_11,
+}
+/// Approximate location parameters for the search.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct WebSearchLocation {
+    /// The two-letter 
+    /// 
+    /// [ISO country code](https://en.wikipedia.org/wiki/ISO_3166-1) of the
+    /// user,
+    /// 
+    /// e.g. `US`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    r#type: Option<String>,
+    /// Free text input for the region of the user, e.g. `California`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    region: Option<String>,
+    /// Free text input for the city of the user, e.g. `San Francisco`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    city: Option<String>,
+    /// The [IANA
+    /// timezone](https://timeapi.io/documentation/iana-timezones) 
+    /// 
+    /// of the user, e.g. `America/Los_Angeles`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    timezone: Option<String>,
+}
+/// The type of location approximation. Always `approximate`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum WebSearchToolUserLocationType {
+    #[serde(rename = "approximate")]
+    Approximate,
+}
+/// Approximate location parameters for the search.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct WebSearchToolUserLocation {
+    /// The type of location approximation. Always `approximate`.
+    r#type: WebSearchToolUserLocationType,
+    /// Shares fields with the `WebSearchLocation` object.
+    #[serde(flatten)]
+    _web_search_location: WebSearchLocation
+}
+/// High level guidance for the amount of context window space to use for
+/// the search. One of `low`, `medium`, or `high`. `medium` is the default.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum WebSearchContextSize {
+    Low,
+    #[default]
+    Medium,
+    High,
+}
+/// This tool searches the web for relevant results to use in a response.
+/// Learn more about the [web search tool](/docs/guides/tools-web-search).
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct WebSearchTool {
+    /// The type of the web search tool. One of:
+    /// - `web_search_preview`
+    /// - `web_search_preview_2025_03_11`
+    r#type: WebSearchToolType,
+    /// Approximate location parameters for the search.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    user_location: Option<WebSearchToolUserLocation>,
+    /// High level guidance for the amount of context window space to use for
+    /// the search. One of `low`, `medium`, or `high`. `medium` is the default.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    search_context_size: Option<WebSearchContextSize>
+}
+
+/// Options for tools which can be provided to the model for response generation.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(untagged)]
+pub enum Tool {
+    /// Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).
+    FunctionTool(FunctionTool),
+    /// A tool that searches for relevant content from uploaded files.
+    /// Learn more about the [file search tool](https://platform.openai.com/docs/guides/tools-file-search).
+    FileSearchTool(FileSearchTool),
+    /// A tool that controls a virtual computer. Learn more about the 
+    /// [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).
+    ComputerTool(ComputerTool),
+    /// This tool searches the web for relevant results to use in a
+    /// response.
+    /// 
+    /// Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search?api-mode=chat).
+    WebSearchTool(WebSearchTool),
 }
 
 /// Options for streaming response. Only set this when you set `stream: true`.
