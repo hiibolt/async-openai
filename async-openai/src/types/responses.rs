@@ -1176,7 +1176,284 @@ pub struct OutputMessage {
     /// The content of the output message.
     pub content: Vec<OutputContent>,
 }
+/// The type of the tool call. Always `file_search_call`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum FileSearchToolCallType {
+    #[serde(rename = "file_search_call")]
+    FileSearchCall,
+}
+/// The status of the file search tool call. One of `in_progress`,
+/// `searching`, `incomplete` or `failed`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum FileSearchToolCallStatus {
+    InProgress,
+    Searching,
+    Incomplete,
+    Failed,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum VectorStoreFileAttribute {
+    String(String),
+    Boolean(bool),
+    Number(f32),
+}
+/// Set of 16 key-value pairs that can be attached to an object. This can
+/// be useful for storing additional information about the object in a
+/// structured format, and querying for objects via API or the dashboard. Keys are
+/// strings with a maximum length of 64 characters. Values are strings with a
+/// maximum length of 512 characters, booleans, or numbers.
+type VectorStoreFileAttributes = HashMap<String, VectorStoreFileAttribute>;
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FileSearchToolCallResult {
+    /// The unique ID of the file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_id: Option<String>,
+    /// The text that was retrieved from the file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    /// The name of the file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
+    /// The vector store file attributes of the file.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes: Option<VectorStoreFileAttributes>,
+    /// The relevance score of the file - a value between 0 and 1.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub score: Option<f32>,
+}
+/// The results of a file search tool call. See the 
+/// [file search guide](https://platform.openai.com/docs/guides/tools-file-search) for more information.
 /// Content item used to generate a response.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct FileSearchToolCall {
+    /// The unique ID of the file search tool call.
+    pub id: String,
+    /// The type of the tool call. Always `file_search_call`.
+    pub r#type: FileSearchToolCallType,
+    /// The status of the file search tool call. One of `in_progress`, 
+    /// `searching`, `incomplete` or `failed`,
+    pub status: FileSearchToolCallStatus,
+    /// The queries used to search for files.
+    pub queries: Vec<String>,
+    /// The results of the file search tool call.
+    pub results: Vec<FileSearchToolCallResult>,
+}
+/// Specifies the event type. For a click action, this property is
+/// always set to `click`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClickType {
+    Click,
+}
+/// Indicates which mouse button was pressed during the click. One of
+/// `left`, `right`, `wheel`, `back`, or `forward`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClickButton {
+    Left,
+    Right,
+    Wheel,
+    Back,
+    Forward,
+}
+/// A click action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Click {
+    /// Specifies the event type. For a click action, this property is 
+    /// always set to `click`.
+    pub r#type: ClickType,
+    /// Indicates which mouse button was pressed during the click. One of
+    /// `left`, `right`, `wheel`, `back`, or `forward`.
+    pub button: ClickButton,
+    /// The x-coordinate where the click occurred.
+    pub x: u32,
+    /// The y-coordinate where the click occurred.
+    pub y: u32,
+}
+/// Specifies the event type. For a double click action, this property is
+/// always set to `double_click`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum DoubleClickType {
+    DoubleClick,
+}
+/// A click action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct DoubleClick {
+    /// Specifies the event type. For a click action, this property is 
+    /// always set to `click`.
+    pub r#type: DoubleClickType,
+    /// The x-coordinate where the click occurred.
+    pub x: u32,
+    /// The y-coordinate where the click occurred.
+    pub y: u32,
+}
+/// An x/y coordinate pair, e.g. `{ x: 100, y: 200 }`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Coordinate {
+    /// The x-coordinate.
+    pub x: u32,
+    /// The y-coordinate.
+    pub y: u32,
+}
+/// Specifies the event type. For a drag action, this property is
+/// always set to `drag`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum DragType {
+    Drag,
+}
+/// A drag action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Drag {
+    /// Specifies the event type. For a drag action, this property is 
+    /// always set to `drag`.
+    pub r#type: DragType,
+    /// An array of coordinates representing the path of the drag action.
+    /// Coordinates will appear as an array of objects, eg:
+    /// 
+    /// ```
+    /// [
+    ///   { x: 100, y: 200 },
+    ///   { x: 200, y: 300 }
+    /// ]
+    /// ```
+    pub path: Vec<Coordinate>
+}
+/// Specifies the event type. For a keypress action, this property is
+/// always set to `keypress`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyPressType {
+    Keypress,
+}
+/// A collection of keypresses the model would like to perform.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct KeyPress {
+    /// Specifies the event type. For a keypress action, this property is 
+    /// always set to `keypress`.
+    pub r#type: KeyPressType,
+    /// The combination of keys the model is requesting to be pressed. This
+    /// is an array of strings, each representing a key.
+    pub keys: Vec<String>,
+}
+/// Specifies the event type. For a move action, this property is
+/// always set to `move`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum MoveType {
+    Move,
+}
+/// A mouse move action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Move {
+    /// Specifies the event type. For a move action, this property is
+    /// always set to `move`.
+    #[serde(rename = "type")]
+    pub r#type: MoveType,
+    /// The x-coordinate where the move occurred.
+    pub x: u32,
+    /// The y-coordinate where the move occurred.
+    pub y: u32,
+}
+/// Specifies the event type. For a screenshot action, this property is
+/// always set to `screenshot`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ScreenshotType {
+    Screenshot,
+}
+/// A screenshot action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Screenshot {
+    /// Specifies the event type. For a screenshot action, this property is
+    /// always set to `screenshot`.
+    pub r#type: ScreenshotType,
+}
+/// Specifies the event type. For a scroll action, this property is
+/// always set to `scroll`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum ScrollType {
+    Scroll,
+}
+/// A scroll action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Scroll {
+    /// Specifies the event type. For a scroll action, this property is
+    /// always set to `scroll`.
+    pub r#type: ScrollType,
+    /// The x-coordinate where the scroll occurred.
+    pub x: u32,
+    /// The y-coordinate where the scroll occurred.
+    pub y: u32,
+    /// The horizontal scroll distance.
+    pub scroll_x: u32,
+    /// The vertical scroll distance.
+    pub scroll_y: u32,
+}
+/// Specifies the event type. For a type action, this property is
+/// always set to `type`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum TypeType {
+    Type,
+}
+/// A type action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Type {
+    /// Specifies the event type. For a type action, this property is
+    /// always set to `type`.
+    pub r#type: TypeType,
+    /// The text to type.
+    pub text: String,
+}
+/// Specifies the event type. For a wait action, this property is
+/// always set to `wait`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum WaitType {
+    Wait,
+}
+/// A wait action.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Wait {
+    /// Specifies the event type. For a wait action, this property is
+    /// always set to `wait`.
+    pub r#type: WaitType,
+}
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ComputerAction {
+    Click(Click),
+    DoubleClick(DoubleClick),
+    Drag(Drag),
+    KeyPress(KeyPress),
+    Move(Move),
+    Screenshot(Screenshot),
+    Scroll(Scroll),
+    Type(Type),
+    Wait(Wait),
+}
+/// The type of the computer call. Always `computer_call`.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ComputerToolCallType {
+    #[serde(rename = "computer_call")]
+    ComputerCall,
+}
+/// A tool call to a computer use tool. See the 
+/// [computer use guide](https://platform.openai.com/docs/guides/tools-computer-use) for more information.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct ComputerToolCall {
+    /// The type of the computer call. Always `computer_call`.
+    pub r#type: ComputerToolCallType,
+    /// The unique ID of the computer call.
+    pub id: String,
+    /// An identifier used when responding to the tool call with output.
+    pub call_id: String,
+    /// The computer action.
+    pub action: ComputerAction,
+}
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Item {
